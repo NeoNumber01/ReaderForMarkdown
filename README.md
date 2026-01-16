@@ -63,6 +63,13 @@ npx serve .
 3. Run the installer and follow the prompts
 4. Done! Launch Markdown Reader from your applications
 
+> [!NOTE]
+> **macOS Users**: If you see "app is damaged" error, run this command in Terminal:
+> ```bash
+> xattr -cr /Applications/Markdown\ Reader.app
+> ```
+> This removes the quarantine flag from unsigned apps.
+
 ### Option 4: Build from Source (Electron)
 
 ```bash
@@ -176,6 +183,13 @@ npx serve .
    - Linux: `Markdown-Reader-x.x.x.AppImage`
 3. 运行安装程序，按提示完成安装
 4. 完成！从应用列表启动 Markdown Reader
+
+> [!NOTE]
+> **macOS 用户**：如果提示"应用已损坏"，请在终端执行：
+> ```bash
+> xattr -cr /Applications/Markdown\ Reader.app
+> ```
+> 这会移除未签名应用的隔离标记。
 
 ### 方式四：从源码构建 (Electron)
 
