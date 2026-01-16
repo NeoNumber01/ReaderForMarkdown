@@ -624,10 +624,8 @@ const Editor = {
                 break;
 
             case 'table':
-                insertText = I18nManager.t('editor.table_placeholder');
-                newSelectionStart = start;
-                newSelectionEnd = start + insertText.length;
-                break;
+                this.showTableDialog();
+                return; // 提前返回
 
             case 'formula':
                 // 公式插入/升级逻辑：
@@ -966,6 +964,161 @@ const Editor = {
 
             this.insertAtCursor(markdown);
             closeDialog();
+        });
+    },
+
+    /**
+     * 显示表格插入对话框
+     */
+    showTableDialog() {
+        // 移除已存在的对话框
+        const existing = document.querySelector('.table-dialog-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'table-dialog-overlay';
+        overlay.innerHTML = `
+            <div class="table-dialog">
+                <div class="table-dialog-header">
+                    <h3>${I18nManager.t('table.title')}</h3>
+                    <button type="button" class="table-dialog-close">&times;</button>
+                </div>
+                <div class="table-dialog-body">
+                    <div class="table-size-inputs">
+                        <div class="table-input-group">
+                            <label for="table-rows">${I18nManager.t('table.rows')}</label>
+                            <input type="number" id="table-rows" min="1" max="20" value="3">
+                        </div>
+                        <div class="table-input-group">
+                            <label for="table-cols">${I18nManager.t('table.columns')}</label>
+                            <input type="number" id="table-cols" min="1" max="20" value="3">
+                        </div>
+                    </div>
+                    <div class="table-preview-section">
+                        <label>${I18nManager.t('table.preview')}</label>
+                        <div class="table-preview-container" id="table-preview-container"></div>
+                    </div>
+                </div>
+                <div class="table-dialog-footer">
+                    <button type="button" class="btn btn-secondary" id="table-cancel-btn">${I18nManager.t('table.cancel')}</button>
+                    <button type="button" class="btn btn-primary" id="table-insert-btn">${I18nManager.t('table.insert')}</button>
+                </div>
+            </div>
+        `;
+
+        // 添加样式
+        if (!document.getElementById('table-dialog-styles')) {
+            const style = document.createElement('style');
+            style.id = 'table-dialog-styles';
+            style.textContent = `
+                .table-dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; animation: fadeIn 0.2s; }
+                .table-dialog { background: var(--color-bg-secondary, #fff); border-radius: 12px; width: 90%; max-width: 480px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); overflow: hidden; }
+                .table-dialog-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--color-border, #e2e8f0); }
+                .table-dialog-header h3 { margin: 0; font-size: 16px; font-weight: 600; }
+                .table-dialog-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--color-text-secondary, #64748b); line-height: 1; padding: 0; }
+                .table-dialog-body { padding: 20px; }
+                .table-size-inputs { display: flex; gap: 16px; margin-bottom: 20px; }
+                .table-input-group { flex: 1; }
+                .table-input-group label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--color-text-secondary, #64748b); font-weight: 500; }
+                .table-input-group input { width: 100%; padding: 10px 12px; border: 1px solid var(--color-border, #e2e8f0); border-radius: 6px; font-size: 14px; background: var(--color-bg-primary, #fff); color: var(--color-text-primary, #1e293b); }
+                .table-input-group input:focus { outline: none; border-color: var(--color-accent, #3b82f6); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+                .table-preview-section label { display: block; margin-bottom: 8px; font-size: 13px; color: var(--color-text-secondary, #64748b); font-weight: 500; }
+                .table-preview-container { background: var(--color-bg-tertiary, #f8fafc); border-radius: 8px; padding: 12px; overflow-x: auto; max-height: 200px; overflow-y: auto; }
+                .table-preview-container table { border-collapse: collapse; width: 100%; font-size: 12px; }
+                .table-preview-container th, .table-preview-container td { border: 1px solid var(--color-border, #e2e8f0); padding: 6px 10px; text-align: left; }
+                .table-preview-container th { background: var(--color-bg-secondary, #f1f5f9); font-weight: 600; color: var(--color-text-primary, #1e293b); }
+                .table-preview-container td { color: var(--color-text-secondary, #64748b); }
+                .table-dialog-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--color-border, #e2e8f0); }
+            `;
+            document.head.appendChild(style);
+        }
+
+        document.body.appendChild(overlay);
+
+        const rowsInput = document.getElementById('table-rows');
+        const colsInput = document.getElementById('table-cols');
+        const previewContainer = document.getElementById('table-preview-container');
+
+        // 生成表格预览
+        const updatePreview = () => {
+            const rows = Math.max(1, Math.min(20, parseInt(rowsInput.value) || 3));
+            const cols = Math.max(1, Math.min(20, parseInt(colsInput.value) || 3));
+
+            let html = '<table><thead><tr>';
+            for (let c = 0; c < cols; c++) {
+                html += `<th>${I18nManager.t('table.header')} ${c + 1}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+
+            for (let r = 0; r < rows; r++) {
+                html += '<tr>';
+                for (let c = 0; c < cols; c++) {
+                    html += `<td>${I18nManager.t('table.cell')} ${r + 1}-${c + 1}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            previewContainer.innerHTML = html;
+        };
+
+        // 初始化预览
+        updatePreview();
+
+        // 监听输入变化
+        rowsInput.addEventListener('input', updatePreview);
+        colsInput.addEventListener('input', updatePreview);
+
+        // 生成 Markdown 表格
+        const generateMarkdown = () => {
+            const rows = Math.max(1, Math.min(20, parseInt(rowsInput.value) || 3));
+            const cols = Math.max(1, Math.min(20, parseInt(colsInput.value) || 3));
+
+            let md = '\n';
+
+            // 表头
+            md += '|';
+            for (let c = 0; c < cols; c++) {
+                md += ` ${I18nManager.t('table.header')} ${c + 1} |`;
+            }
+            md += '\n';
+
+            // 分隔符
+            md += '|';
+            for (let c = 0; c < cols; c++) {
+                md += '------|';
+            }
+            md += '\n';
+
+            // 数据行
+            for (let r = 0; r < rows; r++) {
+                md += '|';
+                for (let c = 0; c < cols; c++) {
+                    md += ` ${I18nManager.t('table.cell')} ${r + 1}-${c + 1} |`;
+                }
+                md += '\n';
+            }
+
+            return md;
+        };
+
+        // 关闭对话框
+        const closeDialog = () => {
+            overlay.remove();
+        };
+
+        overlay.querySelector('.table-dialog-close').addEventListener('click', closeDialog);
+        document.getElementById('table-cancel-btn').addEventListener('click', closeDialog);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeDialog();
+        });
+
+        // 插入表格
+        document.getElementById('table-insert-btn').addEventListener('click', () => {
+            const markdown = generateMarkdown();
+            this.insertAtCursor(markdown);
+            closeDialog();
+            // 保存到历史记录
+            this.saveToHistory();
         });
     },
 

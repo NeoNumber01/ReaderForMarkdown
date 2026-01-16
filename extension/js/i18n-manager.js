@@ -204,6 +204,16 @@ const I18nManager = {
             'image.insert': 'Insert Image',
             'image.preview_alt': 'Preview',
 
+            // Table dialog
+            'table.title': 'Insert Table',
+            'table.rows': 'Rows',
+            'table.columns': 'Columns',
+            'table.preview': 'Preview',
+            'table.cancel': 'Cancel',
+            'table.insert': 'Insert Table',
+            'table.header': 'Header',
+            'table.cell': 'Cell',
+
             // Code copy
             'copy': 'Copy',
             'copied': 'Copied!'
@@ -401,6 +411,16 @@ const I18nManager = {
             'image.cancel': '取消',
             'image.insert': '插入图片',
             'image.preview_alt': '预览',
+
+            // Table dialog
+            'table.title': '插入表格',
+            'table.rows': '行数',
+            'table.columns': '列数',
+            'table.preview': '预览',
+            'table.cancel': '取消',
+            'table.insert': '插入表格',
+            'table.header': '表头',
+            'table.cell': '单元格',
 
             // Code copy
             'copy': '复制',
