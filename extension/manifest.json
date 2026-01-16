@@ -30,7 +30,13 @@
         {
             "matches": [
                 "file:///*/*.md",
-                "file:///*/*.markdown"
+                "file:///*/*.markdown",
+                "https://*/*.md",
+                "https://*/*.markdown",
+                "http://*/*.md",
+                "http://*/*.markdown",
+                "https://raw.githubusercontent.com/*",
+                "https://gist.githubusercontent.com/*"
             ],
             "js": [
                 "content.js"
@@ -47,8 +53,7 @@
                 "index.html",
                 "styles/*",
                 "js/*",
-                "libs/*",
-                "electron/*"
+                "lib/*"
             ],
             "matches": [
                 "<all_urls>"

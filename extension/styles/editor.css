@@ -1,0 +1,357 @@
+/* ============================================
+   Editor Styles
+   ============================================ */
+
+/* Editor Container */
+.editor-container {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: var(--color-bg-primary);
+    z-index: 200;
+    flex-direction: column;
+}
+
+.editor-container.active {
+    display: flex;
+}
+
+/* Editor Toolbar */
+.editor-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.editor-toolbar-left,
+.editor-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.editor-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.editor-btn:hover {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+}
+
+.editor-btn:active {
+    transform: scale(0.95);
+}
+
+.editor-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.editor-separator {
+    width: 1px;
+    height: 24px;
+    background: var(--color-border);
+    margin: 0 0.5rem;
+}
+
+/* Editor Toolbar Select */
+.editor-select {
+    height: 32px;
+    padding: 0 8px;
+    font-size: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-width: 70px;
+}
+
+.editor-select:hover {
+    border-color: var(--color-accent);
+    color: var(--color-text-primary);
+}
+
+.editor-select:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Editor Main Area */
+.editor-main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.editor-pane,
+.preview-pane {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.editor-pane {
+    border-right: 1px solid var(--color-border);
+}
+
+/* Textarea - 恢复为等宽字体以保持 Markdown 编辑体验 */
+.editor-textarea {
+    flex: 1;
+    width: 100%;
+    padding: 1.5rem;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    border: none;
+    outline: none;
+    resize: none;
+    /* 英文使用优质等宽字体，中文使用无衬线字体以获得更好阅读体验 */
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, 'Courier New', 'Microsoft YaHei', 'PingFang SC', monospace;
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    tab-size: 4;
+}
+
+.editor-textarea::placeholder {
+    color: var(--color-text-tertiary);
+}
+
+.editor-textarea:focus {
+    outline: none;
+}
+
+/* Preview Pane - 与编辑区保持视觉一致 */
+.preview-pane {
+    background: var(--color-bg-secondary);
+    overflow-y: auto;
+}
+
+.preview-pane .markdown-body {
+    padding: 1.5rem;
+    max-width: none;
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.8;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* 图片样式 */
+.preview-pane .markdown-body figure {
+    margin: 1em 0;
+    text-align: center;
+}
+
+.preview-pane .markdown-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.preview-pane .markdown-body figcaption {
+    margin-top: 0.5em;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+/* Editor Only Mode */
+.editor-container.editor-only .preview-pane {
+    display: none;
+}
+
+.editor-container.editor-only .editor-pane {
+    border-right: none;
+}
+
+/* Preview Only Mode */
+.editor-container.preview-only .editor-pane {
+    display: none;
+}
+
+/* ============================================
+   Export Menu Styles
+   ============================================ */
+
+.export-menu {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.export-menu.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.export-menu-content {
+    background: var(--color-bg-secondary);
+    border-radius: 16px;
+    box-shadow: var(--shadow-xl);
+    width: 90%;
+    max-width: 400px;
+    overflow: hidden;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.export-menu.active .export-menu-content {
+    transform: scale(1);
+}
+
+.export-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.export-menu-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.export-close {
+    width: 32px;
+    height: 32px;
+}
+
+/* Export Options */
+.export-options {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.export-option {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    width: 100%;
+}
+
+.export-option:hover {
+    background: var(--color-accent-light);
+    border-color: var(--color-accent);
+}
+
+.export-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-tertiary);
+    border-radius: 10px;
+    color: var(--color-text-secondary);
+    transition: all 0.2s ease;
+}
+
+.export-option:hover .export-icon {
+    background: var(--color-accent);
+    color: white;
+}
+
+.export-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.export-icon.pdf-icon {
+    background: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+}
+
+.export-option:hover .pdf-icon {
+    background: #EF4444;
+    color: white;
+}
+
+.export-icon.word-icon {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+}
+
+.export-option:hover .word-icon {
+    background: #3B82F6;
+    color: white;
+}
+
+.export-info {
+    flex: 1;
+}
+
+.export-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.export-desc {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+/* ============================================
+   Responsive Editor
+   ============================================ */
+
+@media (max-width: 768px) {
+    .editor-main {
+        flex-direction: column;
+    }
+
+    .editor-pane {
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+        max-height: 50%;
+    }
+
+    .editor-toolbar-left {
+        flex-wrap: wrap;
+    }
+
+    .editor-separator {
+        display: none;
+    }
+}

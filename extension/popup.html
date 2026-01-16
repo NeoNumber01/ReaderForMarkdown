@@ -35,6 +35,10 @@
             margin-bottom: 16px;
         }
 
+        .header-content {
+            flex: 1;
+        }
+
         .logo {
             width: 40px;
             height: 40px;
@@ -59,6 +63,23 @@
         .subtitle {
             font-size: 12px;
             color: var(--text-secondary);
+        }
+
+        .lang-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            background: #F1F5F9;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .lang-btn:hover {
+            background: #E2E8F0;
+            color: var(--text);
         }
 
         .section {
@@ -121,6 +142,7 @@
             width: 14px;
             height: 14px;
             color: var(--accent);
+            flex-shrink: 0;
         }
 
         .footer {
@@ -136,6 +158,67 @@
             color: var(--accent);
             text-decoration: none;
         }
+
+        /* 开关样式 */
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: #F8FAFC;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .setting-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #CBD5E1;
+            transition: 0.3s;
+            border-radius: 22px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--accent);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(18px);
+        }
     </style>
 </head>
 
@@ -147,10 +230,11 @@
                 <polyline points="14 2 14 8 20 8"></polyline>
             </svg>
         </div>
-        <div>
+        <div class="header-content">
             <div class="title">Markdown Reader</div>
-            <div class="subtitle">精致优雅的阅读体验</div>
+            <div class="subtitle" data-i18n="subtitle">精致优雅的阅读体验</div>
         </div>
+        <button class="lang-btn" id="lang-toggle">EN</button>
     </div>
 
     <div class="section">
@@ -160,12 +244,12 @@
                 <polyline points="15 3 21 3 21 9"></polyline>
                 <line x1="10" y1="14" x2="21" y2="3"></line>
             </svg>
-            打开完整应用
+            <span data-i18n="open_app">打开完整应用</span>
         </button>
     </div>
 
     <div class="section">
-        <div class="section-title">功能特性</div>
+        <div class="section-title" data-i18n="features_title">功能特性</div>
         <div class="features">
             <div class="feature">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -173,21 +257,21 @@
                     <line x1="9" y1="20" x2="15" y2="20"></line>
                     <line x1="12" y1="4" x2="12" y2="20"></line>
                 </svg>
-                完美排版
+                <span data-i18n="feature_layout">完美排版</span>
             </div>
             <div class="feature">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="16 18 22 12 16 6"></polyline>
                     <polyline points="8 6 2 12 8 18"></polyline>
                 </svg>
-                代码高亮
+                <span data-i18n="feature_code">代码高亮</span>
             </div>
             <div class="feature">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
                     <path d="M12 6v6l4 2"></path>
                 </svg>
-                数学公式
+                <span data-i18n="feature_math">数学公式</span>
             </div>
             <div class="feature">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -195,14 +279,23 @@
                     <line x1="12" y1="1" x2="12" y2="3"></line>
                     <line x1="12" y1="21" x2="12" y2="23"></line>
                 </svg>
-                主题切换
+                <span data-i18n="feature_theme">主题切换</span>
             </div>
         </div>
     </div>
 
-    <div class="footer">
-        打开 .md 文件将自动渲染
+    <div class="section">
+        <div class="section-title" data-i18n="settings_title">设置</div>
+        <div class="setting-item">
+            <span data-i18n="auto_detect">自动检测网页 Markdown</span>
+            <label class="switch">
+                <input type="checkbox" id="auto-detect-toggle" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
     </div>
+
+    <div class="footer" data-i18n="footer">打开 .md 文件将自动渲染</div>
 
     <script src="popup.js"></script>
 </body>
