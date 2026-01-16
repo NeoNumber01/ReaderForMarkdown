@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveContent: (content, filePath) => ipcRenderer.send('save-content', { content, filePath }),
     openExternal: (url) => ipcRenderer.send('open-external', url),
 
+    // 读取本地图片
+    readLocalImage: (imagePath, baseDir) => ipcRenderer.invoke('read-local-image', { imagePath, baseDir }),
+
     // 接收消息
     onFileOpened: (callback) => ipcRenderer.on('file-opened', (event, data) => callback(data)),
     onMenuNew: (callback) => ipcRenderer.on('menu-new', () => callback()),

@@ -182,10 +182,11 @@ function loadFile(filePath) {
     try {
         const content = fs.readFileSync(filePath, 'utf-8');
         const fileName = path.basename(filePath);
+        const fileDir = path.dirname(filePath);
 
         currentFilePath = filePath;
         mainWindow.setTitle(`${fileName} - Markdown Reader`);
-        mainWindow.webContents.send('file-opened', { fileName, content, filePath });
+        mainWindow.webContents.send('file-opened', { fileName, content, filePath, fileDir });
     } catch (error) {
         dialog.showErrorBox('错误', `无法打开文件: ${error.message}`);
     }
@@ -248,6 +249,48 @@ ipcMain.on('save-content', (event, { content, filePath }) => {
 
 ipcMain.on('open-external', (event, url) => {
     shell.openExternal(url);
+});
+
+// 读取本地图片并返回 Base64 数据
+ipcMain.handle('read-local-image', async (event, { imagePath, baseDir }) => {
+    try {
+        let fullPath = imagePath;
+
+        // 如果是相对路径，则基于 baseDir 解析
+        if (!path.isAbsolute(imagePath)) {
+            fullPath = path.resolve(baseDir, imagePath);
+        }
+
+        // 检查文件是否存在
+        if (!fs.existsSync(fullPath)) {
+            return { success: false, error: 'File not found' };
+        }
+
+        // 读取文件
+        const data = fs.readFileSync(fullPath);
+        const base64 = data.toString('base64');
+
+        // 根据扩展名确定 MIME 类型
+        const ext = path.extname(fullPath).toLowerCase();
+        const mimeTypes = {
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.svg': 'image/svg+xml',
+            '.bmp': 'image/bmp',
+            '.ico': 'image/x-icon'
+        };
+        const mimeType = mimeTypes[ext] || 'image/png';
+
+        return {
+            success: true,
+            data: `data:${mimeType};base64,${base64}`
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
 });
 
 // 应用事件

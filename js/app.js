@@ -6,6 +6,7 @@
 const App = {
     currentFileName: 'Untitled.md',
     currentContent: '',
+    currentFileDir: null,  // 当前文件所在目录（用于解析相对路径图片）
 
     /**
      * 初始化应用
@@ -267,6 +268,9 @@ const App = {
         const html = MarkdownRenderer.render(content);
         contentEl.innerHTML = html;
 
+        // 绑定代码复制按钮事件
+        this.bindCodeCopyButtons(contentEl);
+
         // 生成目录
         TocGenerator.generate(contentEl);
 
@@ -275,6 +279,55 @@ const App = {
         if (contentWrapper) {
             contentWrapper.scrollTop = 0;
         }
+    },
+
+    /**
+     * 绑定代码块复制按钮事件
+     * @param {HTMLElement} container - 包含代码块的容器元素
+     */
+    bindCodeCopyButtons(container) {
+        const copyButtons = container.querySelectorAll('.code-copy-btn');
+        copyButtons.forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // 获取代码内容
+                const code = btn.dataset.code
+                    .replace(/&amp;/g, '&')
+                    .replace(/&quot;/g, '"')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>');
+
+                try {
+                    await navigator.clipboard.writeText(code);
+
+                    // 显示成功状态
+                    btn.classList.add('copied');
+                    btn.title = I18nManager.t('copied') || 'Copied!';
+
+                    // 2秒后恢复
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        btn.title = I18nManager.t('copy') || 'Copy';
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                    // 降级使用 execCommand
+                    const textarea = document.createElement('textarea');
+                    textarea.value = code;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+
+                    btn.classList.add('copied');
+                    setTimeout(() => btn.classList.remove('copied'), 2000);
+                }
+            });
+        });
     },
 
     /**
@@ -335,6 +388,10 @@ const App = {
         if (content.trim()) {
             const html = MarkdownRenderer.render(content);
             contentEl.innerHTML = html;
+
+            // 绑定代码复制按钮事件
+            this.bindCodeCopyButtons(contentEl);
+
             TocGenerator.generate(contentEl);
 
             // 隐藏欢迎屏幕
@@ -461,6 +518,58 @@ const App = {
         } else {
             alert(I18nManager.t('app.no_content'));
         }
+    },
+
+    /**
+     * 处理本地图片路径（Electron 环境）
+     * 将相对路径图片转换为 Base64 数据
+     * @param {string} content - Markdown 内容
+     * @param {string} baseDir - 文件所在目录
+     * @returns {Promise<string>} 处理后的内容
+     */
+    async processLocalImages(content, baseDir) {
+        if (!window.electronAPI || !window.electronAPI.readLocalImage) {
+            return content;
+        }
+
+        // 匹配 Markdown 图片语法: ![alt](path)
+        const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+        const matches = [...content.matchAll(imageRegex)];
+
+        for (const match of matches) {
+            const fullMatch = match[0];
+            const alt = match[1];
+            const imagePath = match[2];
+
+            // 跳过已经是 Base64 的图片
+            if (imagePath.startsWith('data:')) {
+                continue;
+            }
+
+            // 跳过网络图片
+            if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+                continue;
+            }
+
+            // 跳过 local: 标记的图片（编辑器内部使用）
+            if (imagePath.startsWith('local:')) {
+                continue;
+            }
+
+            try {
+                // 读取本地图片
+                const result = await window.electronAPI.readLocalImage(imagePath, baseDir);
+                if (result.success) {
+                    // 替换为 Base64 数据
+                    const newImageTag = `![${alt}](${result.data})`;
+                    content = content.replace(fullMatch, newImageTag);
+                }
+            } catch (error) {
+                console.warn(`Failed to load image: ${imagePath}`, error);
+            }
+        }
+
+        return content;
     }
 };
 
@@ -471,8 +580,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 支持 Electron 环境
 if (typeof window !== 'undefined' && window.electronAPI) {
-    window.electronAPI.onFileOpened((data) => {
-        App.renderMarkdown(data.fileName, data.content);
+    window.electronAPI.onFileOpened(async (data) => {
+        // 保存文件目录（用于解析相对路径图片）
+        App.currentFileDir = data.fileDir || null;
+
+        // 处理本地图片路径
+        let content = data.content;
+        if (App.currentFileDir) {
+            content = await App.processLocalImages(content, App.currentFileDir);
+        }
+
+        App.renderMarkdown(data.fileName, content);
     });
 
     window.electronAPI.onMenuNew(() => {

@@ -202,7 +202,11 @@ const I18nManager = {
             'image.alt_label': 'Image description (Alt)',
             'image.cancel': 'Cancel',
             'image.insert': 'Insert Image',
-            'image.preview_alt': 'Preview'
+            'image.preview_alt': 'Preview',
+
+            // Code copy
+            'copy': 'Copy',
+            'copied': 'Copied!'
         },
         'zh-CN': {
             // App General
@@ -396,7 +400,11 @@ const I18nManager = {
             'image.alt_label': '图片描述 (Alt)',
             'image.cancel': '取消',
             'image.insert': '插入图片',
-            'image.preview_alt': '预览'
+            'image.preview_alt': '预览',
+
+            // Code copy
+            'copy': '复制',
+            'copied': '已复制！'
         }
     },
 
@@ -412,26 +420,9 @@ const I18nManager = {
      * 加载保存的语言设置
      */
     loadLanguage() {
-        // 先从 localStorage 读取默认值
         const saved = localStorage.getItem(this.LANG_KEY);
+        // 默认使用英语，不再跟随系统，以满足用户需求"打开以后默认是英文显示"
         this.currentLang = saved || 'en';
-
-        // 如果在 Chrome 扩展环境中，优先使用 chrome.storage.local 的设置
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-            chrome.storage.local.get(['popupLanguage'], (result) => {
-                if (result.popupLanguage) {
-                    // 将 popup 的语言设置映射到 i18n-manager 的格式
-                    const langMap = { 'zh': 'zh-CN', 'en': 'en' };
-                    const mappedLang = langMap[result.popupLanguage] || result.popupLanguage;
-
-                    if (this.translations[mappedLang] && this.currentLang !== mappedLang) {
-                        this.currentLang = mappedLang;
-                        localStorage.setItem(this.LANG_KEY, mappedLang);
-                        this.updateUI();
-                    }
-                }
-            });
-        }
     },
 
     /**
@@ -442,13 +433,6 @@ const I18nManager = {
         if (this.translations[lang]) {
             this.currentLang = lang;
             localStorage.setItem(this.LANG_KEY, lang);
-
-            // 同步到 chrome.storage.local（如果在扩展环境中）
-            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                const popupLang = lang === 'zh-CN' ? 'zh' : 'en';
-                chrome.storage.local.set({ popupLanguage: popupLang });
-            }
-
             this.updateUI();
 
             // 触发自定义事件，以便其他组件可以响应语言变化

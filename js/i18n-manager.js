@@ -202,7 +202,11 @@ const I18nManager = {
             'image.alt_label': 'Image description (Alt)',
             'image.cancel': 'Cancel',
             'image.insert': 'Insert Image',
-            'image.preview_alt': 'Preview'
+            'image.preview_alt': 'Preview',
+
+            // Code copy
+            'copy': 'Copy',
+            'copied': 'Copied!'
         },
         'zh-CN': {
             // App General
@@ -396,7 +400,11 @@ const I18nManager = {
             'image.alt_label': '图片描述 (Alt)',
             'image.cancel': '取消',
             'image.insert': '插入图片',
-            'image.preview_alt': '预览'
+            'image.preview_alt': '预览',
+
+            // Code copy
+            'copy': '复制',
+            'copied': '已复制！'
         }
     },
 

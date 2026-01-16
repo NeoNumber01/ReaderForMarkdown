@@ -282,7 +282,10 @@ const ExportManager = {
      */
     exportAsPDF(content, fileName) {
         // 渲染 Markdown
-        const html = MarkdownRenderer.render(content);
+        let html = MarkdownRenderer.render(content);
+
+        // 移除复制按钮（导出时不需要）
+        html = this.cleanupForExport(html);
 
         // 创建临时容器
         const container = document.createElement('div');
@@ -349,21 +352,34 @@ const ExportManager = {
                         border-radius: 3pt;
                         border: 0.5pt solid #E2E8F0;
                     }
+                    .pdf-export-container .code-block-wrapper {
+                        margin: 10pt 0;
+                    }
                     .pdf-export-container pre {
-                        background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+                        background: #F8FAFC;
                         border: 1pt solid #E2E8F0;
                         border-radius: 6pt;
                         padding: 12pt;
                         margin: 10pt 0;
-                        overflow: hidden;
-                        page-break-inside: avoid;
+                        overflow: visible !important;
+                        max-width: 100%;
                     }
                     .pdf-export-container pre code {
-                        background: transparent;
-                        border: none;
-                        padding: 0;
-                        font-size: 9pt;
-                        line-height: 1.5;
+                        background: transparent !important;
+                        border: none !important;
+                        padding: 0 !important;
+                        font-family: 'Consolas', 'Courier New', monospace !important;
+                        font-size: 8pt !important;
+                        line-height: 1.4 !important;
+                        white-space: pre-wrap !important;
+                        word-wrap: break-word !important;
+                        word-break: break-word !important;
+                        display: block !important;
+                        color: #1E293B !important;
+                    }
+                    /* 移除代码块语言标签，避免定位问题 */
+                    .pdf-export-container pre[data-lang]::before {
+                        display: none !important;
                     }
                     .pdf-export-container blockquote {
                         margin: 10pt 0;
@@ -432,6 +448,10 @@ const ExportManager = {
                         margin: 10pt 0;
                         overflow-x: auto;
                     }
+                    /* 隐藏复制按钮 */
+                    .pdf-export-container .code-copy-btn {
+                        display: none !important;
+                    }
                 </style>
                 ${html}
             </div>
@@ -469,6 +489,53 @@ const ExportManager = {
     },
 
     /**
+     * 清理 HTML 以供导出（移除复制按钮等交互元素）
+     * @param {string} html - 原始 HTML
+     * @returns {string} 清理后的 HTML
+     */
+    cleanupForExport(html) {
+        // 1. 移除复制按钮（多种匹配方式确保完全移除）
+        html = html.replace(/<button[^>]*class="code-copy-btn"[^>]*>[\s\S]*?<\/button>/gi, '');
+        html = html.replace(/<button[^>]*code-copy-btn[^>]*>[\s\S]*?<\/button>/gi, '');
+
+        // 2. 移除 SVG 图标残留
+        html = html.replace(/<svg[^>]*class="copy-icon"[^>]*>[\s\S]*?<\/svg>/gi, '');
+        html = html.replace(/<svg[^>]*class="check-icon"[^>]*>[\s\S]*?<\/svg>/gi, '');
+
+        // 3. 移除 code-block-wrapper div 但保留内容
+        html = html.replace(/<div[^>]*class="code-block-wrapper"[^>]*>/gi, '');
+        // 移除对应的闭合 div（在 pre 之前的）
+        html = html.replace(/<\/div>(\s*<pre)/gi, '$1');
+        // 移除 pre 结束后的多余闭合 div
+        html = html.replace(/(<\/pre>)\s*<\/div>/gi, '$1');
+
+        // 4. 使用 DOM 解析来移除 hljs span 标签（更可靠）
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+
+        // 移除所有 hljs 相关的 span，保留其文本内容
+        const hljsSpans = tempDiv.querySelectorAll('span[class*="hljs"]');
+        hljsSpans.forEach(span => {
+            const parent = span.parentNode;
+            while (span.firstChild) {
+                parent.insertBefore(span.firstChild, span);
+            }
+            parent.removeChild(span);
+        });
+
+        // 移除复制按钮元素
+        const copyBtns = tempDiv.querySelectorAll('.code-copy-btn');
+        copyBtns.forEach(btn => btn.remove());
+
+        html = tempDiv.innerHTML;
+
+        // 5. 移除 data-code 属性（包含转义的代码内容）
+        html = html.replace(/ data-code="[^"]*"/gi, '');
+
+        return html;
+    },
+
+    /**
      * PDF 导出回退方案（使用打印）
      * @param {string} content 
      * @param {string} fileName 
@@ -501,12 +568,238 @@ const ExportManager = {
     },
 
     /**
-     * 导出为 Word (使用 HTML 格式，Word 可以打开)
+     * 导出为 Word (.docx 格式)
+     * @param {string} content - Markdown 内容
+     * @param {string} fileName - 文件名
+     */
+    async exportAsWord(content, fileName) {
+        // 检查 docx 库是否可用
+        if (typeof docx === 'undefined') {
+            console.warn('docx library not loaded, falling back to HTML format');
+            this.exportAsWordFallback(content, fileName);
+            return;
+        }
+
+        try {
+            const { Document, Paragraph, TextRun, HeadingLevel, Packer,
+                Table, TableRow, TableCell, WidthType, BorderStyle,
+                AlignmentType } = docx;
+
+            // 解析 Markdown 为结构化数据
+            const elements = this.parseMarkdownToElements(content);
+
+            // 创建文档
+            const doc = new Document({
+                sections: [{
+                    properties: {},
+                    children: elements.map(el => this.createDocxElement(el, docx))
+                }]
+            });
+
+            // 生成 Blob
+            const blob = await Packer.toBlob(doc);
+            this.downloadBlob(blob, `${fileName}.docx`);
+
+        } catch (error) {
+            console.error('DOCX export error:', error);
+            // 回退到 HTML 格式
+            this.exportAsWordFallback(content, fileName);
+        }
+    },
+
+    /**
+     * 解析 Markdown 为结构化元素
+     * @param {string} content - Markdown 内容
+     * @returns {Array} 元素数组
+     */
+    parseMarkdownToElements(content) {
+        const elements = [];
+        const lines = content.split('\n');
+        let inCodeBlock = false;
+        let codeBlockContent = [];
+        let codeBlockLang = '';
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            // 代码块处理
+            if (line.startsWith('```')) {
+                if (!inCodeBlock) {
+                    inCodeBlock = true;
+                    codeBlockLang = line.slice(3).trim();
+                    codeBlockContent = [];
+                } else {
+                    elements.push({
+                        type: 'codeblock',
+                        content: codeBlockContent.join('\n'),
+                        lang: codeBlockLang
+                    });
+                    inCodeBlock = false;
+                    codeBlockLang = '';
+                }
+                continue;
+            }
+
+            if (inCodeBlock) {
+                codeBlockContent.push(line);
+                continue;
+            }
+
+            // 标题
+            const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+            if (headingMatch) {
+                elements.push({
+                    type: 'heading',
+                    level: headingMatch[1].length,
+                    content: headingMatch[2]
+                });
+                continue;
+            }
+
+            // 空行
+            if (line.trim() === '') {
+                continue;
+            }
+
+            // 列表项
+            const ulMatch = line.match(/^[\s]*[-*+]\s+(.+)$/);
+            if (ulMatch) {
+                elements.push({
+                    type: 'listitem',
+                    content: ulMatch[1],
+                    ordered: false
+                });
+                continue;
+            }
+
+            const olMatch = line.match(/^[\s]*\d+\.\s+(.+)$/);
+            if (olMatch) {
+                elements.push({
+                    type: 'listitem',
+                    content: olMatch[1],
+                    ordered: true
+                });
+                continue;
+            }
+
+            // 引用
+            if (line.startsWith('>')) {
+                elements.push({
+                    type: 'quote',
+                    content: line.replace(/^>\s*/, '')
+                });
+                continue;
+            }
+
+            // 普通段落
+            elements.push({
+                type: 'paragraph',
+                content: line
+            });
+        }
+
+        return elements;
+    },
+
+    /**
+     * 创建 docx 元素
+     * @param {Object} el - 元素对象
+     * @param {Object} docxLib - docx 库
+     * @returns {Object} docx 元素
+     */
+    createDocxElement(el, docxLib) {
+        const { Paragraph, TextRun, HeadingLevel } = docxLib;
+
+        switch (el.type) {
+            case 'heading':
+                const headingLevels = {
+                    1: HeadingLevel.HEADING_1,
+                    2: HeadingLevel.HEADING_2,
+                    3: HeadingLevel.HEADING_3,
+                    4: HeadingLevel.HEADING_4,
+                    5: HeadingLevel.HEADING_5,
+                    6: HeadingLevel.HEADING_6
+                };
+                return new Paragraph({
+                    heading: headingLevels[el.level] || HeadingLevel.HEADING_1,
+                    children: this.parseInlineText(el.content, docxLib)
+                });
+
+            case 'codeblock':
+                return new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: el.content,
+                            font: 'Consolas',
+                            size: 20, // 10pt
+                            break: el.content.includes('\n') ? undefined : undefined
+                        })
+                    ],
+                    shading: { fill: 'F5F5F5' },
+                    spacing: { before: 200, after: 200 }
+                });
+
+            case 'listitem':
+                return new Paragraph({
+                    bullet: el.ordered ? undefined : { level: 0 },
+                    numbering: el.ordered ? { reference: 'default-numbering', level: 0 } : undefined,
+                    children: this.parseInlineText(el.content, docxLib)
+                });
+
+            case 'quote':
+                return new Paragraph({
+                    children: this.parseInlineText(el.content, docxLib),
+                    indent: { left: 720 },
+                    border: {
+                        left: { style: 'single', size: 24, color: '3B82F6' }
+                    }
+                });
+
+            case 'paragraph':
+            default:
+                return new Paragraph({
+                    children: this.parseInlineText(el.content, docxLib),
+                    spacing: { after: 200 }
+                });
+        }
+    },
+
+    /**
+     * 解析行内文本格式
+     * @param {string} text - 文本内容
+     * @param {Object} docxLib - docx 库
+     * @returns {Array} TextRun 数组
+     */
+    parseInlineText(text, docxLib) {
+        const { TextRun } = docxLib;
+        const runs = [];
+
+        // 简化处理：移除 Markdown 格式标记，返回纯文本
+        // 移除粗体、斜体、代码等标记
+        let cleanText = text
+            .replace(/\*\*([^*]+)\*\*/g, '$1')  // 粗体
+            .replace(/\*([^*]+)\*/g, '$1')      // 斜体
+            .replace(/`([^`]+)`/g, '$1')        // 行内代码
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'); // 链接
+
+        runs.push(new TextRun({ text: cleanText }));
+
+        return runs;
+    },
+
+    /**
+     * Word 导出回退方案（使用 HTML 格式）
      * @param {string} content 
      * @param {string} fileName 
      */
-    exportAsWord(content, fileName) {
-        const html = MarkdownRenderer.render(content);
+    exportAsWordFallback(content, fileName) {
+        let html = MarkdownRenderer.render(content);
+
+        // 清理 HTML（移除复制按钮等）
+        html = this.cleanupForExport(html);
+
+        // 移除 hljs 类相关的 span 标签，只保留文本
+        html = html.replace(/<span class="hljs-[^"]*">([^<]*)<\/span>/gi, '$1');
 
         // Word 兼容的 HTML 格式
         const wordHTML = `
@@ -524,18 +817,43 @@ const ExportManager = {
                 <![endif]-->
                 <style>
                     body { font-family: 'Calibri', sans-serif; font-size: 11pt; line-height: 1.6; color: #333; }
-                    h1 { font-size: 20pt; color: #1a1a1a; border-bottom: 1pt solid #ccc; padding-bottom: 6pt; }
-                    h2 { font-size: 16pt; color: #1a1a1a; border-bottom: 0.5pt solid #ddd; padding-bottom: 4pt; }
-                    h3 { font-size: 13pt; color: #333; }
-                    p { margin-bottom: 10pt; }
-                    code { font-family: 'Consolas', monospace; font-size: 10pt; background-color: #f5f5f5; padding: 2pt 4pt; }
-                    pre { font-family: 'Consolas', monospace; font-size: 10pt; background-color: #f5f5f5; padding: 10pt; margin: 10pt 0; white-space: pre-wrap; }
+                    h1 { font-size: 20pt; color: #1a1a1a; border-bottom: 1pt solid #ccc; padding-bottom: 6pt; margin-top: 12pt; margin-bottom: 12pt; }
+                    h2 { font-size: 16pt; color: #1a1a1a; border-bottom: 0.5pt solid #ddd; padding-bottom: 4pt; margin-top: 12pt; margin-bottom: 8pt; }
+                    h3 { font-size: 13pt; color: #333; margin-top: 10pt; margin-bottom: 6pt; }
+                    h4, h5, h6 { font-size: 11pt; color: #333; margin-top: 8pt; margin-bottom: 4pt; }
+                    p { margin-bottom: 10pt; margin-top: 0; }
+                    code { font-family: 'Consolas', 'Courier New', monospace; font-size: 10pt; background-color: #f5f5f5; padding: 1pt 3pt; border: 0.5pt solid #ddd; }
+                    pre { 
+                        font-family: 'Consolas', 'Courier New', monospace; 
+                        font-size: 9pt; 
+                        background-color: #f8f8f8; 
+                        padding: 10pt; 
+                        margin: 10pt 0; 
+                        white-space: pre-wrap;
+                        word-wrap: break-word;
+                        border: 1pt solid #e0e0e0;
+                        line-height: 1.4;
+                    }
+                    pre code {
+                        font-family: 'Consolas', 'Courier New', monospace;
+                        font-size: 9pt;
+                        background-color: transparent;
+                        padding: 0;
+                        border: none;
+                        white-space: pre-wrap;
+                        word-wrap: break-word;
+                    }
                     blockquote { margin: 10pt 0; padding: 10pt; border-left: 3pt solid #0066cc; background-color: #f0f7ff; }
+                    blockquote p { margin: 0; }
                     table { border-collapse: collapse; width: 100%; margin: 10pt 0; }
                     th, td { border: 1pt solid #ccc; padding: 6pt 10pt; text-align: left; }
                     th { background-color: #f5f5f5; font-weight: bold; }
-                    ul, ol { padding-left: 20pt; }
-                    a { color: #0066cc; }
+                    ul, ol { padding-left: 20pt; margin: 0 0 10pt 0; }
+                    li { margin-bottom: 4pt; }
+                    a { color: #0066cc; text-decoration: none; }
+                    img { max-width: 100%; height: auto; }
+                    figure { margin: 10pt 0; text-align: center; }
+                    figcaption { font-size: 9pt; color: #666; margin-top: 4pt; }
                 </style>
             </head>
             <body>
@@ -544,8 +862,8 @@ const ExportManager = {
             </html>
         `;
 
-        const blob = new Blob([wordHTML], { type: 'application/msword' });
-        this.downloadBlob(blob, `${fileName}.doc`);
+        const blob = new Blob([wordHTML], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+        this.downloadBlob(blob, `${fileName}.docx`);
     },
 
     /**

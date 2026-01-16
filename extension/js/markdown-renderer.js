@@ -32,7 +32,25 @@ const MarkdownRenderer = {
                     highlighted = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 }
 
-                return `<pre data-lang="${language || 'text'}"><code class="hljs language-${language}">${highlighted}</code></pre>`;
+                // 转义代码内容用于 data 属性
+                const escapedCode = text
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+
+                // GitHub 风格的复制按钮
+                const copyButton = `<button class="code-copy-btn" title="${I18nManager.t('copy') || 'Copy'}" data-code="${escapedCode}">
+                    <svg class="copy-icon" viewBox="0 0 16 16" width="16" height="16">
+                        <path fill="currentColor" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path>
+                        <path fill="currentColor" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
+                    </svg>
+                    <svg class="check-icon" viewBox="0 0 16 16" width="16" height="16" style="display:none;">
+                        <path fill="currentColor" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
+                    </svg>
+                </button>`;
+
+                return `<div class="code-block-wrapper"><pre data-lang="${language || 'text'}">${copyButton}<code class="hljs language-${language}">${highlighted}</code></pre></div>`;
             },
 
             // 自定义标题渲染
