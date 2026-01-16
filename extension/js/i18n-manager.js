@@ -143,6 +143,8 @@ const I18nManager = {
             'export.pdf.desc': 'Export as PDF document',
             'export.docx': 'Word',
             'export.docx.desc': 'Export as .docx document',
+            'export.filename': 'Filename',
+            'export.filename_placeholder': 'Enter filename',
 
             // Messages
             'msg.select_text': 'Please select text first',
@@ -351,6 +353,8 @@ const I18nManager = {
             'export.pdf.desc': '导出为 PDF 文档',
             'export.docx': 'Word',
             'export.docx.desc': '导出为 .docx 文档',
+            'export.filename': '文件名',
+            'export.filename_placeholder': '输入文件名',
 
             // Messages
             'msg.select_text': '请先选中要设置样式的文字',

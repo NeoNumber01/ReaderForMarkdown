@@ -275,6 +275,54 @@ body {
     max-width: 400px;
 }
 
+/* Filename Editor */
+.filename-editor {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filename-editor:hover {
+    background: var(--color-bg-tertiary);
+}
+
+.filename-editor:hover .edit-icon {
+    opacity: 1;
+}
+
+.filename-editor .edit-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--color-text-tertiary);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    flex-shrink: 0;
+}
+
+.filename-editor.editing {
+    background: var(--color-bg-primary);
+    box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+.filename-editor.editing .edit-icon {
+    display: none;
+}
+
+.file-name-input {
+    font-family: inherit;
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 200px;
+    max-width: 300px;
+}
+
 /* Buttons */
 .btn {
     display: inline-flex;

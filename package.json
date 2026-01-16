@@ -1,6 +1,6 @@
 {
     "name": "markdown-reader",
-    "version": "1.0.7",
+    "version": "1.0.9",
     "description": "精致优雅的 Markdown 阅读器和编辑器",
     "main": "electron/main.js",
     "scripts": {

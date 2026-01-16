@@ -247,6 +247,60 @@
     height: 32px;
 }
 
+/* Export Filename Section */
+.export-filename-section {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.export-filename-section label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.export-filename-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.export-filename-input-wrapper:focus-within {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.export-filename-input {
+    flex: 1;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.9375rem;
+    border: none;
+    background: transparent;
+    color: var(--color-text-primary);
+    outline: none;
+    min-width: 0;
+}
+
+.export-filename-input::placeholder {
+    color: var(--color-text-tertiary);
+}
+
+.export-filename-ext {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background: var(--color-bg-tertiary);
+    border-left: 1px solid var(--color-border);
+    transition: all 0.2s ease;
+}
+
 /* Export Options */
 .export-options {
     padding: 0.75rem;

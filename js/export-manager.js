@@ -31,6 +31,13 @@ const ExportManager = {
                         </svg>
                     </button>
                 </div>
+                <div class="export-filename-section">
+                    <label for="export-filename" data-i18n="export.filename">${I18nManager.t('export.filename')}</label>
+                    <div class="export-filename-input-wrapper">
+                        <input type="text" id="export-filename" class="export-filename-input" placeholder="${I18nManager.t('export.filename_placeholder')}" />
+                        <span class="export-filename-ext" id="export-filename-ext">.md</span>
+                    </div>
+                </div>
                 <div class="export-options">
                     <button class="export-option" data-format="md">
                         <div class="export-icon">
@@ -100,8 +107,20 @@ const ExportManager = {
             closeBtn.addEventListener('click', () => this.hideExportMenu());
         }
 
-        // 导出选项点击
+        // 导出选项点击和悬停
+        const extFormats = { md: '.md', html: '.html', pdf: '.pdf', docx: '.docx' };
+
         document.querySelectorAll('.export-option').forEach(option => {
+            // 悬停时更新扩展名
+            option.addEventListener('mouseenter', () => {
+                const format = option.dataset.format;
+                const extSpan = document.getElementById('export-filename-ext');
+                if (extSpan && extFormats[format]) {
+                    extSpan.textContent = extFormats[format];
+                }
+            });
+
+            // 点击导出
             option.addEventListener('click', () => {
                 const format = option.dataset.format;
                 this.exportAs(format);
@@ -124,8 +143,16 @@ const ExportManager = {
      */
     showExportMenu() {
         const exportMenu = document.getElementById('export-menu');
+        const filenameInput = document.getElementById('export-filename');
+
         if (exportMenu) {
             exportMenu.classList.add('active');
+
+            // 设置当前文件名到输入框
+            if (filenameInput) {
+                const currentFileName = this.getCurrentFileName();
+                filenameInput.value = currentFileName;
+            }
         }
     },
 
@@ -145,7 +172,11 @@ const ExportManager = {
      */
     exportAs(format) {
         const content = this.getCurrentContent();
-        const fileName = this.getCurrentFileName();
+        // 优先使用导出输入框中的文件名
+        const filenameInput = document.getElementById('export-filename');
+        let fileName = filenameInput && filenameInput.value.trim()
+            ? filenameInput.value.trim()
+            : this.getCurrentFileName();
 
         switch (format) {
             case 'md':

@@ -69,6 +69,9 @@ const App = {
             exportBtn.addEventListener('click', () => ExportManager.showExportMenu());
         }
 
+        // 文件名编辑器
+        this.setupFilenameEditor();
+
         // 键盘快捷键
         document.addEventListener('keydown', (e) => {
             // 在编辑模式下，编辑器处理自己的快捷键
@@ -231,6 +234,78 @@ const App = {
 
         if (sidebar) sidebar.classList.remove('mobile-open');
         if (overlay) overlay.classList.remove('active');
+    },
+
+    /**
+     * 设置文件名编辑器
+     */
+    setupFilenameEditor() {
+        const filenameEditor = document.getElementById('filename-editor');
+        const fileNameSpan = document.getElementById('file-name');
+        const fileNameInput = document.getElementById('file-name-input');
+
+        if (!filenameEditor || !fileNameSpan || !fileNameInput) return;
+
+        // 点击文件名编辑器进入编辑模式
+        filenameEditor.addEventListener('click', (e) => {
+            // 只有在有内容时才允许编辑文件名
+            if (!this.currentContent.trim()) return;
+
+            // 避免重复进入编辑模式
+            if (fileNameInput.style.display !== 'none') return;
+
+            // 切换到输入模式
+            const currentName = this.currentFileName.replace(/\.[^/.]+$/, ''); // 移除扩展名
+            fileNameInput.value = currentName;
+            fileNameSpan.style.display = 'none';
+            fileNameInput.style.display = 'block';
+            filenameEditor.classList.add('editing');
+
+            // 聚焦并选中
+            fileNameInput.focus();
+            fileNameInput.select();
+        });
+
+        // 输入框失焦时保存
+        fileNameInput.addEventListener('blur', () => {
+            this.saveFilenameEdit(fileNameSpan, fileNameInput, filenameEditor);
+        });
+
+        // 回车键保存
+        fileNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                fileNameInput.blur();
+            } else if (e.key === 'Escape') {
+                // Esc 取消编辑
+                e.preventDefault();
+                fileNameInput.value = this.currentFileName.replace(/\.[^/.]+$/, '');
+                fileNameInput.blur();
+            }
+        });
+    },
+
+    /**
+     * 保存文件名编辑
+     */
+    saveFilenameEdit(span, input, container) {
+        let newName = input.value.trim();
+
+        if (newName) {
+            // 确保有 .md 扩展名
+            if (!newName.toLowerCase().endsWith('.md') &&
+                !newName.toLowerCase().endsWith('.markdown')) {
+                newName += '.md';
+            }
+            this.currentFileName = newName;
+            span.textContent = newName;
+            document.title = `${newName} - Markdown Reader`;
+        }
+
+        // 切换回显示模式
+        span.style.display = '';
+        input.style.display = 'none';
+        container.classList.remove('editing');
     },
 
     /**
