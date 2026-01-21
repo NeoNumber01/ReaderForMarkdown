@@ -229,6 +229,17 @@ const ExportManager = {
     },
 
     /**
+     * 获取导出字体大小设置
+     * @returns {number} 字体大小 (pt)
+     */
+    getExportFontSize() {
+        if (typeof SettingsManager !== 'undefined' && SettingsManager.settings) {
+            return SettingsManager.settings.appearance.exportFontSize || 11;
+        }
+        return 11; // 默认值
+    },
+
+    /**
      * 导出为 Markdown
      * @param {string} content 
      * @param {string} fileName 
@@ -243,7 +254,9 @@ const ExportManager = {
      * @param {string} fileName 
      */
     exportAsHTML(content, fileName) {
-        const html = MarkdownRenderer.render(content);
+        let html = MarkdownRenderer.render(content);
+        // 移除复制按钮等交互元素
+        html = this.cleanupForExport(html);
         const fullHTML = this.generateFullHTML(html, fileName);
         this.downloadFile(fullHTML, `${fileName}.html`, 'text/html');
     },
@@ -255,6 +268,12 @@ const ExportManager = {
      * @returns {string}
      */
     generateFullHTML(bodyContent, title) {
+        // 获取导出字体大小设置 (pt 转 px 约 1pt = 1.333px)
+        const baseFontPt = this.getExportFontSize();
+        const baseFontPx = Math.round(baseFontPt * 1.333);
+        const h1FontPx = Math.round(baseFontPx * 2);
+        const h2FontPx = Math.round(baseFontPx * 1.5);
+
         return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -268,6 +287,7 @@ const ExportManager = {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: ${baseFontPx}px;
             line-height: 1.75;
             color: #1E293B;
             background: #F8FAFC;
@@ -282,8 +302,8 @@ const ExportManager = {
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         h1, h2, h3, h4, h5, h6 { font-weight: 600; margin-top: 1.5em; margin-bottom: 0.75em; }
-        h1 { font-size: 2.25rem; border-bottom: 2px solid #E2E8F0; padding-bottom: 0.5rem; }
-        h2 { font-size: 1.75rem; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.375rem; }
+        h1 { font-size: ${h1FontPx}px; border-bottom: 2px solid #E2E8F0; padding-bottom: 0.5rem; }
+        h2 { font-size: ${h2FontPx}px; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.375rem; }
         p { margin-bottom: 1em; }
         a { color: #3B82F6; text-decoration: none; }
         a:hover { text-decoration: underline; }
@@ -296,6 +316,9 @@ const ExportManager = {
         th { background: #F8FAFC; font-weight: 600; }
         img { max-width: 100%; height: auto; border-radius: 8px; }
         ul, ol { padding-left: 1.5em; margin-bottom: 1em; }
+        /* 隐藏代码复制按钮（导出时不需要） */
+        .code-copy-btn { display: none !important; }
+        .code-block-wrapper { position: relative; }
     </style>
 </head>
 <body>
@@ -318,6 +341,13 @@ const ExportManager = {
         // 移除复制按钮（导出时不需要）
         html = this.cleanupForExport(html);
 
+        // 获取导出字体大小设置
+        const baseFontSize = this.getExportFontSize();
+        const h1Size = Math.round(baseFontSize * 2);      // H1: 2x
+        const h2Size = Math.round(baseFontSize * 1.45);   // H2: 1.45x
+        const h3Size = Math.round(baseFontSize * 1.18);   // H3: 1.18x
+        const codeSize = Math.round(baseFontSize * 0.82); // Code: 0.82x
+
         // 创建临时容器
         const container = document.createElement('div');
         container.innerHTML = `
@@ -325,39 +355,47 @@ const ExportManager = {
                 <style>
                     .pdf-export-container {
                         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                        font-size: 11pt;
+                        font-size: ${baseFontSize}pt;
                         line-height: 1.8;
                         color: #1E293B;
                         padding: 0;
                         max-width: 100%;
                     }
                     .pdf-export-container h1 {
-                        font-size: 22pt;
+                        font-size: ${h1Size}pt;
                         font-weight: 700;
                         color: #0F172A;
                         margin: 0 0 16pt 0;
                         padding-bottom: 10pt;
                         border-bottom: 2pt solid #3B82F6;
+                        page-break-after: avoid !important;
+                        break-after: avoid !important;
                     }
                     .pdf-export-container h2 {
-                        font-size: 16pt;
+                        font-size: ${h2Size}pt;
                         font-weight: 600;
                         color: #1E293B;
                         margin: 20pt 0 12pt 0;
                         padding-bottom: 6pt;
                         border-bottom: 1pt solid #E2E8F0;
+                        page-break-after: avoid !important;
+                        break-after: avoid !important;
                     }
                     .pdf-export-container h3 {
-                        font-size: 13pt;
+                        font-size: ${h3Size}pt;
                         font-weight: 600;
                         color: #334155;
                         margin: 16pt 0 8pt 0;
+                        page-break-after: avoid !important;
+                        break-after: avoid !important;
                     }
                     .pdf-export-container h4, .pdf-export-container h5, .pdf-export-container h6 {
-                        font-size: 11pt;
+                        font-size: ${baseFontSize}pt;
                         font-weight: 600;
                         color: #475569;
                         margin: 12pt 0 6pt 0;
+                        page-break-after: avoid !important;
+                        break-after: avoid !important;
                     }
                     .pdf-export-container p {
                         margin: 0 0 10pt 0;
@@ -376,7 +414,7 @@ const ExportManager = {
                     }
                     .pdf-export-container code {
                         font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
-                        font-size: 9pt;
+                        font-size: ${codeSize}pt;
                         background: #F1F5F9;
                         color: #0F172A;
                         padding: 2pt 5pt;
@@ -385,6 +423,8 @@ const ExportManager = {
                     }
                     .pdf-export-container .code-block-wrapper {
                         margin: 10pt 0;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                     .pdf-export-container pre {
                         background: #F8FAFC;
@@ -392,8 +432,10 @@ const ExportManager = {
                         border-radius: 6pt;
                         padding: 12pt;
                         margin: 10pt 0;
-                        overflow: visible !important;
+                        overflow-x: auto !important;
                         max-width: 100%;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                     .pdf-export-container pre code {
                         background: transparent !important;
@@ -402,9 +444,9 @@ const ExportManager = {
                         font-family: 'Consolas', 'Courier New', monospace !important;
                         font-size: 8pt !important;
                         line-height: 1.4 !important;
-                        white-space: pre-wrap !important;
-                        word-wrap: break-word !important;
-                        word-break: break-word !important;
+                        white-space: pre !important;
+                        word-wrap: normal !important;
+                        overflow-wrap: normal !important;
                         display: block !important;
                         color: #1E293B !important;
                     }
@@ -420,6 +462,8 @@ const ExportManager = {
                         border-radius: 0 6pt 6pt 0;
                         font-style: italic;
                         color: #1E40AF;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                     .pdf-export-container blockquote p {
                         margin: 0;
@@ -427,15 +471,20 @@ const ExportManager = {
                     .pdf-export-container ul, .pdf-export-container ol {
                         margin: 0 0 10pt 0;
                         padding-left: 20pt;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                     .pdf-export-container li {
                         margin-bottom: 4pt;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                     .pdf-export-container table {
                         width: 100%;
                         margin: 10pt 0;
                         border-collapse: collapse;
-                        page-break-inside: avoid;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                         font-size: 10pt;
                     }
                     .pdf-export-container th {
@@ -458,6 +507,8 @@ const ExportManager = {
                         height: auto;
                         border-radius: 6pt;
                         margin: 8pt 0;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                     .pdf-export-container hr {
                         border: none;
@@ -469,19 +520,28 @@ const ExportManager = {
                     .pdf-export-container figure {
                         margin: 10pt 0;
                         text-align: center;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                     .pdf-export-container figcaption {
-                        font-size: 9pt;
+                        font-size: ${codeSize}pt;
                         color: #64748B;
                         margin-top: 6pt;
                     }
                     .katex-display {
                         margin: 10pt 0;
                         overflow-x: auto;
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                     /* 隐藏复制按钮 */
                     .pdf-export-container .code-copy-btn {
                         display: none !important;
+                    }
+                    /* 告警块样式与分页控制 */
+                    .pdf-export-container .alert {
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                 </style>
                 ${html}
@@ -492,21 +552,28 @@ const ExportManager = {
 
         // 使用 html2pdf 生成 PDF
         const opt = {
-            margin: [15, 15, 15, 15],
+            margin: [12, 12, 12, 12],
             filename: `${fileName}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
                 letterRendering: true,
-                logging: false
+                logging: false,
+                scrollX: 0,
+                scrollY: 0
             },
             jsPDF: {
                 unit: 'mm',
                 format: 'a4',
                 orientation: 'portrait'
             },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            pagebreak: {
+                mode: ['css', 'legacy'],
+                before: '.page-break-before',
+                after: '.page-break-after',
+                avoid: ['pre', 'figure', 'table', 'blockquote', 'img', 'ul', 'ol', 'li', '.code-block-wrapper', '.alert']
+            }
         };
 
         html2pdf().set(opt).from(container).save().then(() => {
@@ -575,6 +642,11 @@ const ExportManager = {
         const html = MarkdownRenderer.render(content);
         const printWindow = window.open('', '_blank');
 
+        // 使用导出字体大小设置
+        const baseFontSize = this.getExportFontSize();
+        const h1Size = Math.round(baseFontSize * 2);
+        const h2Size = Math.round(baseFontSize * 1.45);
+
         printWindow.document.write(`
             <!DOCTYPE html>
             <html>
@@ -584,9 +656,9 @@ const ExportManager = {
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
                 <style>
                     @page { margin: 2cm; }
-                    body { font-family: 'Inter', sans-serif; line-height: 1.75; color: #1E293B; font-size: 12pt; }
-                    h1 { font-size: 22pt; border-bottom: 2pt solid #3B82F6; padding-bottom: 6pt; }
-                    h2 { font-size: 16pt; margin-top: 18pt; border-bottom: 1pt solid #E2E8F0; }
+                    body { font-family: 'Inter', sans-serif; line-height: 1.75; color: #1E293B; font-size: ${baseFontSize}pt; }
+                    h1 { font-size: ${h1Size}pt; border-bottom: 2pt solid #3B82F6; padding-bottom: 6pt; }
+                    h2 { font-size: ${h2Size}pt; margin-top: 18pt; border-bottom: 1pt solid #E2E8F0; }
                     pre, blockquote, table { page-break-inside: avoid; }
                 </style>
             </head>
@@ -741,6 +813,11 @@ const ExportManager = {
     createDocxElement(el, docxLib) {
         const { Paragraph, TextRun, HeadingLevel } = docxLib;
 
+        // 获取导出字体大小设置 (pt 转换为 half-points，docx 使用 half-points)
+        const baseFontSize = this.getExportFontSize();
+        const baseSizeHp = baseFontSize * 2;  // half-points
+        const codeSizeHp = Math.round(baseFontSize * 0.82) * 2;
+
         switch (el.type) {
             case 'heading':
                 const headingLevels = {
@@ -753,7 +830,7 @@ const ExportManager = {
                 };
                 return new Paragraph({
                     heading: headingLevels[el.level] || HeadingLevel.HEADING_1,
-                    children: this.parseInlineText(el.content, docxLib)
+                    children: this.parseInlineText(el.content, docxLib, baseSizeHp)
                 });
 
             case 'codeblock':
@@ -762,7 +839,7 @@ const ExportManager = {
                         new TextRun({
                             text: el.content,
                             font: 'Consolas',
-                            size: 20, // 10pt
+                            size: codeSizeHp,
                             break: el.content.includes('\n') ? undefined : undefined
                         })
                     ],
@@ -774,12 +851,12 @@ const ExportManager = {
                 return new Paragraph({
                     bullet: el.ordered ? undefined : { level: 0 },
                     numbering: el.ordered ? { reference: 'default-numbering', level: 0 } : undefined,
-                    children: this.parseInlineText(el.content, docxLib)
+                    children: this.parseInlineText(el.content, docxLib, baseSizeHp)
                 });
 
             case 'quote':
                 return new Paragraph({
-                    children: this.parseInlineText(el.content, docxLib),
+                    children: this.parseInlineText(el.content, docxLib, baseSizeHp),
                     indent: { left: 720 },
                     border: {
                         left: { style: 'single', size: 24, color: '3B82F6' }
@@ -789,7 +866,7 @@ const ExportManager = {
             case 'paragraph':
             default:
                 return new Paragraph({
-                    children: this.parseInlineText(el.content, docxLib),
+                    children: this.parseInlineText(el.content, docxLib, baseSizeHp),
                     spacing: { after: 200 }
                 });
         }
@@ -801,7 +878,7 @@ const ExportManager = {
      * @param {Object} docxLib - docx 库
      * @returns {Array} TextRun 数组
      */
-    parseInlineText(text, docxLib) {
+    parseInlineText(text, docxLib, sizeHp) {
         const { TextRun } = docxLib;
         const runs = [];
 
@@ -813,7 +890,7 @@ const ExportManager = {
             .replace(/`([^`]+)`/g, '$1')        // 行内代码
             .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'); // 链接
 
-        runs.push(new TextRun({ text: cleanText }));
+        runs.push(new TextRun({ text: cleanText, size: sizeHp }));
 
         return runs;
     },
@@ -832,6 +909,13 @@ const ExportManager = {
         // 移除 hljs 类相关的 span 标签，只保留文本
         html = html.replace(/<span class="hljs-[^"]*">([^<]*)<\/span>/gi, '$1');
 
+        // 使用导出字体大小设置
+        const baseFontSize = this.getExportFontSize();
+        const h1Size = Math.round(baseFontSize * 2);
+        const h2Size = Math.round(baseFontSize * 1.45);
+        const h3Size = Math.round(baseFontSize * 1.18);
+        const codeSize = Math.round(baseFontSize * 0.82);
+
         // Word 兼容的 HTML 格式
         const wordHTML = `
             <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -847,16 +931,23 @@ const ExportManager = {
                 </xml>
                 <![endif]-->
                 <style>
-                    body { font-family: 'Calibri', sans-serif; font-size: 11pt; line-height: 1.6; color: #333; }
-                    h1 { font-size: 20pt; color: #1a1a1a; border-bottom: 1pt solid #ccc; padding-bottom: 6pt; margin-top: 12pt; margin-bottom: 12pt; }
-                    h2 { font-size: 16pt; color: #1a1a1a; border-bottom: 0.5pt solid #ddd; padding-bottom: 4pt; margin-top: 12pt; margin-bottom: 8pt; }
-                    h3 { font-size: 13pt; color: #333; margin-top: 10pt; margin-bottom: 6pt; }
-                    h4, h5, h6 { font-size: 11pt; color: #333; margin-top: 8pt; margin-bottom: 4pt; }
+                    :root {
+                        --base-font-size: ${baseFontSize}pt;
+                        --h1-font-size: ${h1Size}pt;
+                        --h2-font-size: ${h2Size}pt;
+                        --h3-font-size: ${h3Size}pt;
+                        --code-font-size: ${codeSize}pt;
+                    }
+                    body { font-family: 'Calibri', sans-serif; font-size: var(--base-font-size); line-height: 1.6; color: #333; }
+                    h1 { font-size: var(--h1-font-size); color: #1a1a1a; border-bottom: 1pt solid #ccc; padding-bottom: 6pt; margin-top: 12pt; margin-bottom: 12pt; }
+                    h2 { font-size: var(--h2-font-size); color: #1a1a1a; border-bottom: 0.5pt solid #ddd; padding-bottom: 4pt; margin-top: 12pt; margin-bottom: 8pt; }
+                    h3 { font-size: var(--h3-font-size); color: #333; margin-top: 10pt; margin-bottom: 6pt; }
+                    h4, h5, h6 { font-size: var(--base-font-size); color: #333; margin-top: 8pt; margin-bottom: 4pt; }
                     p { margin-bottom: 10pt; margin-top: 0; }
-                    code { font-family: 'Consolas', 'Courier New', monospace; font-size: 10pt; background-color: #f5f5f5; padding: 1pt 3pt; border: 0.5pt solid #ddd; }
+                    code { font-family: 'Consolas', 'Courier New', monospace; font-size: var(--code-font-size); background-color: #f5f5f5; padding: 1pt 3pt; border: 0.5pt solid #ddd; }
                     pre { 
                         font-family: 'Consolas', 'Courier New', monospace; 
-                        font-size: 9pt; 
+                        font-size: var(--code-font-size); 
                         background-color: #f8f8f8; 
                         padding: 10pt; 
                         margin: 10pt 0; 
@@ -867,7 +958,7 @@ const ExportManager = {
                     }
                     pre code {
                         font-family: 'Consolas', 'Courier New', monospace;
-                        font-size: 9pt;
+                        font-size: var(--code-font-size);
                         background-color: transparent;
                         padding: 0;
                         border: none;
@@ -884,7 +975,7 @@ const ExportManager = {
                     a { color: #0066cc; text-decoration: none; }
                     img { max-width: 100%; height: auto; }
                     figure { margin: 10pt 0; text-align: center; }
-                    figcaption { font-size: 9pt; color: #666; margin-top: 4pt; }
+                    figcaption { font-size: ${codeSize}pt; color: #666; margin-top: 4pt; }
                 </style>
             </head>
             <body>

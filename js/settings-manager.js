@@ -30,7 +30,8 @@ const SettingsManager = {
             theme: 'system',  // 'light', 'dark', 'system'
             previewFontSize: 16,  // 预览区字号
             previewFontFamily: 'system',  // 预览区字体
-            accentColor: '#3B82F6'  // 主题强调色
+            accentColor: '#3B82F6',  // 主题强调色
+            exportFontSize: 11  // 导出字体大小 (pt)
         }
     },
 
@@ -383,6 +384,13 @@ const SettingsManager = {
                                     <input type="color" id="settings-accent-color" value="${this.settings.appearance.accentColor}" title="Custom Color">
                                 </div>
                             </div>
+                            <div class="settings-row">
+                                <label data-i18n="settings.appearance.exportFontSize">${I18nManager.t('settings.appearance.exportFontSize')}</label>
+                                <div class="settings-control">
+                                    <input type="range" id="settings-export-font-size" min="8" max="16" value="${this.settings.appearance.exportFontSize}">
+                                    <span id="settings-export-font-size-value">${this.settings.appearance.exportFontSize}pt</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -560,6 +568,17 @@ const SettingsManager = {
             overlay.querySelectorAll('.color-preset').forEach(b => b.classList.remove('active'));
             this.setSetting('appearance.accentColor', color);
         });
+
+        // 导出字体大小
+        const exportFontSizeInput = overlay.querySelector('#settings-export-font-size');
+        const exportFontSizeValue = overlay.querySelector('#settings-export-font-size-value');
+        if (exportFontSizeInput && exportFontSizeValue) {
+            exportFontSizeInput.addEventListener('input', () => {
+                const size = parseInt(exportFontSizeInput.value);
+                exportFontSizeValue.textContent = size + 'pt';
+                this.setSetting('appearance.exportFontSize', size);
+            });
+        }
 
         // 重置
         overlay.querySelector('#settings-reset-btn').addEventListener('click', () => {

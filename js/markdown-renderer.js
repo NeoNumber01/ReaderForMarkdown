@@ -110,10 +110,20 @@ const MarkdownRenderer = {
             // 预处理：替换本地图片标记为实际的 Base64 数据
             let preprocessed = markdown;
             if (typeof Editor !== 'undefined' && Editor.imageStore) {
+                // 处理 Markdown 语法 ![alt](local:xxx)
                 preprocessed = preprocessed.replace(/!\[([^\]]*)\]\(local:([^)]+)\)/g, (match, alt, imgId) => {
                     const base64Data = Editor.imageStore[imgId];
                     if (base64Data) {
                         return `![${alt}](${base64Data})`;
+                    }
+                    return match; // 如果找不到数据，保持原样
+                });
+
+                // 处理 HTML img 标签 <img src="local:xxx" ...>
+                preprocessed = preprocessed.replace(/<img\s+([^>]*?)src=["']local:([^"']+)["']([^>]*)>/gi, (match, before, imgId, after) => {
+                    const base64Data = Editor.imageStore[imgId];
+                    if (base64Data) {
+                        return `<img ${before}src="${base64Data}"${after}>`;
                     }
                     return match; // 如果找不到数据，保持原样
                 });

@@ -827,7 +827,7 @@ const Editor = {
             style.textContent = `
                 .image-dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; animation: fadeIn 0.2s; }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                .image-dialog { background: var(--color-bg-secondary, #fff); border-radius: 12px; width: 90%; max-width: 460px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); overflow: hidden; }
+                .image-dialog { background: var(--color-bg-secondary, #fff); border-radius: 12px; width: 90%; max-width: 480px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); overflow: hidden; max-height: 90vh; overflow-y: auto; }
                 .image-dialog-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--color-border, #e2e8f0); }
                 .image-dialog-header h3 { margin: 0; font-size: 16px; font-weight: 600; }
                 .image-dialog-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--color-text-secondary, #64748b); line-height: 1; padding: 0; }
@@ -1264,13 +1264,26 @@ const Editor = {
 
         const textarea = document.getElementById('editor-textarea');
         if (textarea) {
-            textarea.value = content;
-            textarea.focus();
+            // 处理 Base64 图片：将长 Base64 转换为短标记，避免编辑区显示乱码
+            const processedContent = this.processBase64Images(content);
+            textarea.value = processedContent;
+
+            // 将光标和滚动位置重置到开头
+            textarea.setSelectionRange(0, 0);
+            textarea.scrollTop = 0;
+            textarea.focus({ preventScroll: true });
+
             this.updatePreview();
 
             // 重置历史记录并保存初始状态
             this.initHistory();
             this.saveToHistory();
+
+            // 确保预览面板也从顶部开始
+            const previewPane = document.querySelector('.preview-pane');
+            if (previewPane) {
+                previewPane.scrollTop = 0;
+            }
         }
 
         // 更新同步滚动按钮可见性
@@ -1340,6 +1353,25 @@ const Editor = {
      */
     hasUnsavedChanges() {
         return this.getContent() !== this.originalContent;
+    },
+
+    /**
+     * 处理 Base64 图片：将长 Base64 数据转换为短标记
+     * @param {string} content - Markdown 内容
+     * @returns {string} 处理后的内容
+     */
+    processBase64Images(content) {
+        if (!content) return content;
+
+        // 匹配 Markdown 图片语法中的 Base64 数据
+        // 格式: ![alt](data:image/xxx;base64,...)
+        return content.replace(/!\[([^\]]*)\]\((data:image\/[^;]+;base64,[^)]+)\)/g, (match, alt, base64Data) => {
+            // 生成唯一 ID 并存储 Base64 数据
+            const imgId = `img_${Date.now()}_${this.imageCounter++}`;
+            this.imageStore[imgId] = base64Data;
+            // 返回使用短标记的图片语法
+            return `![${alt}](local:${imgId})`;
+        });
     },
 
     /**
