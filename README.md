@@ -10,6 +10,10 @@
 
 ---
 
+<img width="2558" height="1401" alt="image" src="https://github.com/user-attachments/assets/2c4787f9-91f3-4046-b147-ab9d6d9b9d72" />
+
+---
+
 # English
 
 A beautiful and elegant Markdown reader and editor, available as a web app, browser extension, and desktop application.
